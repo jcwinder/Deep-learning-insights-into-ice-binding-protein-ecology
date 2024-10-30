@@ -1,0 +1,6 @@
+1. annotate pfams: pfam_annotate.sh
+2. Combine pfams into 1 file per domain: cat_pfams.sh
+3. Filter pfam file down to pfams of interest: get_dufs_from_pfam.sh which calls get_dufs_from_pfam.R
+4. Extract genes which contain pfams of interest: extract_fasta_duf3494.py
+5. Filter and clean up genes with clean_hmmout.R
+- Including renaming sequences with more useful identifiers, and separating out double/triple/more domains into separate sequences
