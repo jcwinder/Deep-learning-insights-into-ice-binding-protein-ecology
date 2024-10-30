@@ -1,9 +1,5 @@
 #!/bin/bash -e
-#SBATCH -p hmem-754   # Partition
-#SBATCH -J clustalo       # Job name
-#SBATCH -o clustalo_%j.out          # Standard output messages
-#SBATCH -e clustalo_%j.err          # Standard error messages
-#SBATCH --time=7-00:00:00 #7 day limit
+#SBATCH slurm/HPC parameters here
 #SBATCH --mem=200G
 
 module add FastTree/2.1.11
