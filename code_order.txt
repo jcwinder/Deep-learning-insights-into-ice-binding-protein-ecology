@@ -1,0 +1,5 @@
+1. Run kraken: kraken.sh 
+2. Download NCBI taxonomic information: 1_extract_info.sh
+3. Build taxonomy paths: 2_tax_dump.sh
+4. Make a python dictionary out of the taxonomy paths: tax_dict.py
+5. Search the taxonomy dictionary: sort_kraken.sh (uses sort_kraken.R and search_dict.py)
