@@ -44,24 +44,27 @@ seqlbl3=pd.DataFrame(seqlbl2)
 target=seqlbl3.iloc[:,:]
 features = seqfeat.iloc[:,:]
 
-def dnn_run(n_envs, n_epochs, lrn_rate, batch_size, nlayers, hidden_nodes1, hidden_nodes2=None):
+def dnn_run(n_envs, n_epochs, pca_dimensions, lrn_rate, batch_size, nlayers, hidden_nodes1, hidden_nodes2=None):
     sss = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
 
     # Train/validation split
     for initial_train_index, initial_val_index in sss.split(features, target):
         features_train = features.iloc[initial_train_index, :]
         features_val = features.iloc[initial_val_index, :]
+        features_val2 = np.asarray(features_val)
         target_train = to_categorical(target.iloc[initial_train_index, :], num_classes=n_envs)
         target_val = to_categorical(target.iloc[initial_val_index, :], num_classes=n_envs)
+        target_val2 = np.asarray(target_val)
 
     # Compute class weights
     y_integers = np.argmax(target_train, axis=1)
     class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(y_integers), y=y_integers)
     d_class_weights = dict(enumerate(class_weights))
 
-    # Reset index for KFold
+    # Reset index for StratifiedKFold
     features_train = features_train.reset_index(drop=True)
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+
+    skf_inner = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
     # Initialize lists for storing losses, accuracies, and ROC curve information
     all_train_losses = []
@@ -75,17 +78,32 @@ def dnn_run(n_envs, n_epochs, lrn_rate, batch_size, nlayers, hidden_nodes1, hidd
     cv_scores = []
 
     # Loop over each fold
-    for fold_train_index, fold_val_index in kf.split(features_train):
+    for fold_train_index, fold_val_index in skf_inner.split(features_train, np.argmax(target_train, axis=1)):
         X_train_fold = features_train.iloc[fold_train_index]
         X_val_fold = features_train.iloc[fold_val_index]
         y_train_fold = target_train[fold_train_index]
         y_val_fold = target_train[fold_val_index]
+
+        X_train_fold=np.asarray(X_train_fold)
+        X_val_fold=np.asarray(X_val_fold)
+        y_train_fold=np.asarray(y_train_fold)
+        y_val_fold=np.asarray(y_val_fold)
+
+        # Apply PCA if required
+        if pca_dimensions > 0:
+            pca = PCA(n_components=pca_dimensions)
+            pca.fit(X_train_fold)
+            X_train_fold = pca.transform(X_train_fold)
+            X_val_fold = pca.transform(X_val_fold)
+
         # Create the model
         model_multi36 = Sequential()
         model_multi36.add(Dense(units=hidden_nodes1, input_dim=X_train_fold.shape[1], activation='relu'))
-        
+        model_multi36.add(Dropout(0.5))
+
         if nlayers == 2 and hidden_nodes2 is not None:
             model_multi36.add(Dense(units=hidden_nodes2, activation='relu'))
+            model_multi36.add(Dropout(0.5))
 
         model_multi36.add(Dense(units=n_envs, activation='softmax'))
 
@@ -115,8 +133,16 @@ def dnn_run(n_envs, n_epochs, lrn_rate, batch_size, nlayers, hidden_nodes1, hidd
         all_y_pred.extend(y_pred_classes)
         cv_scores.append(accuracy_score(y_true_classes, y_pred_classes))
 
+        # Store true labels and predicted probabilities for ROC curve
+        all_roc_y_true.extend(y_true_classes)
+        all_roc_y_pred_probs.extend(y_pred_probs)
 
-    final_eval = model_multi36.evaluate(x=features_val, y=target_val)
+    # Final evaluation on validation set
+    if pca_dimensions > 0:
+        pca.fit(features_val)
+        features_val = pca.transform(features_val)
+
+    final_eval = model_multi36.evaluate(x=features_val2, y=target_val2)
     print("Final evaluation on validation set:", final_eval)
 
     # Return necessary information for external plotting
@@ -125,11 +151,16 @@ def dnn_run(n_envs, n_epochs, lrn_rate, batch_size, nlayers, hidden_nodes1, hidd
         'val_losses': all_val_losses,
         'train_accs': all_train_accs,
         'val_accs': all_val_accs,
+        'roc_y_true': all_roc_y_true,
+        'roc_y_pred_probs': all_roc_y_pred_probs,
+        'model_model': model_multi36,
         'initial_train_index': initial_train_index,
         'initial_val_index': initial_val_index,
         'final_eval': final_eval,
         'all_y_true': all_y_true,
         'all_y_pred': all_y_pred,  # Needed for confusion matrix
+        'x_train': features_train,
+        'x_val': features_val
     }
 
 #Example running
