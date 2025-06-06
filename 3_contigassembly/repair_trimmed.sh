@@ -28,8 +28,8 @@ if  grep -q "Unequal number of read-pairs detected" "$sample_id"; then
                 -o "/path/to/folder/$sample_name/trimmed/metaspades"
                 echo "Processed $sample_id, gzipping"
                 mv "/path/to/folder/$sample_name/trimmed/metaspades/scaffolds.fasta" "$sample_id"
-                mv "/path/to/folder/$sample_name/trimmed/${sample_name}_1_fixed" "/gpfs/home/hwe21ndu/mg_duf3494/metadata/1/test_process_3/fastq_dump"
-                mv "/path/to/folder/$sample_name/trimmed/${sample_name}_2_fixed" "/gpfs/home/hwe21ndu/mg_duf3494/metadata/1/test_process_3/fastq_dump"
+                mv "/path/to/folder/$sample_name/trimmed/${sample_name}_1_fixed" "/path/to/folder"
+                mv "/path/to/folder/$sample_name/trimmed/${sample_name}_2_fixed" "/path/to/folder"
                 tar -czvf "/path/to/folder/$sample_name/archive.tar.gz" "$sample_id/trimmed"
                 #rm -r "/path/to/folder/$sample_id/trimmed"  # ONLY IF DESIRED       
 else
